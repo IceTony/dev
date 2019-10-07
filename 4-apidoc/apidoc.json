@@ -1,0 +1,9 @@
+{
+  "name": "IceTony",
+  "version": "0.1.0",
+  "description": "IceTony apiDoc for web shop",
+  "apidoc": {
+    "title": "IceTony apiDoc for web shop",
+    "url": "http://icetony.devops.rebrain.srwx.net/api"
+  }
+}
