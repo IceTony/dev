@@ -3,20 +3,29 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"log"
-	"math/rand"
-	"net/http"
 	"github.com/gorilla/mux"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/mysql"
+	"log"
+	"math/rand"
+	"net/http"
+	"strings"
 )
 
 type Product struct {
-	ID          int `json:"id"`
+	ID          int    `json:"id"`
 	Name        string `json:"name"`
 	Description string `json:"description"`
 	Price       string `json:"price"`
 }
+
+const (
+	dbHost = "localhost"
+	dbPort = "3306"
+	dbUser = "test"
+	dbPass = "123"
+	dbName = "Shop"
+)
 
 func productsList(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
@@ -27,6 +36,7 @@ func productsList(w http.ResponseWriter, r *http.Request) {
 
 	fmt.Println("Endpoint Hit: returnAllProducts")
 	json.NewEncoder(w).Encode(products)
+	defer db.Close()
 }
 
 func getProduct(w http.ResponseWriter, r *http.Request) {
@@ -44,6 +54,7 @@ func getProduct(w http.ResponseWriter, r *http.Request) {
 	}
 	fmt.Println("Endpoint Hit: Product #:",key)
 	json.NewEncoder(w).Encode(product)
+	defer db.Close()
 }
 
 func createProduct(w http.ResponseWriter, r *http.Request) {
@@ -57,6 +68,7 @@ func createProduct(w http.ResponseWriter, r *http.Request) {
 
 	fmt.Println("Endpoint Hit: Creating New Product, id:", product.ID)
 	json.NewEncoder(w).Encode(product)
+	defer db.Close()
 }
 
 func putProduct(w http.ResponseWriter, r *http.Request) {
@@ -80,6 +92,7 @@ func putProduct(w http.ResponseWriter, r *http.Request) {
 	db.Model(&dbProduct).Update("price", product.Price)
 	fmt.Println("Endpoint Hit: Updating Product, id:", product.ID)
 	json.NewEncoder(w).Encode(dbProduct)
+	defer db.Close()
 }
 
 func deleteProduct(w http.ResponseWriter, r *http.Request) {
@@ -99,11 +112,13 @@ func deleteProduct(w http.ResponseWriter, r *http.Request) {
 	db.Delete(&product)
 	fmt.Println("Endpoint Hit: Deleting Product, id:", product.ID)
 	json.NewEncoder(w).Encode(product)
+	defer db.Close()
 }
 
 func Database() *gorm.DB {
 	//open a db connection
-	db, err := gorm.Open("mysql", "test:123@tcp(127.0.0.1:3306)/Shop?charset=utf8&parseTime=True")
+	dbConnection := strings.Join([]string{dbUser,":", dbPass, "@", "tcp(", dbHost,":", dbPort, ")/", dbName, "?charset=utf8&parseTime=True"}, "")
+	db, err := gorm.Open("mysql", dbConnection)
 	fmt.Println("Endpoint Hit: Connect db: ok")
 	if err != nil {
 		panic("failed to connect database")
@@ -112,8 +127,6 @@ func Database() *gorm.DB {
 }
 
 func main() {
-	db := Database()
-	db.AutoMigrate(&Product{})
 	r := mux.NewRouter()
 	r.HandleFunc("/products_list", productsList).Methods("GET")
 	r.HandleFunc("/products/{id}", getProduct).Methods("GET")
